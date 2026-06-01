@@ -1,6 +1,6 @@
 # ModelBridge SDK
 
-A production-grade TypeScript SDK for the ModelBridge AI Gateway platform.
+A TypeScript SDK for the ModelBridge AI Gateway platform.
 
 ## Features
 
@@ -101,7 +101,7 @@ const modelUsage = await client.usage.byModel('2024-01-01', '2024-01-31');
 ```typescript
 const client = new ModelBridge({
   apiKey: process.env.MODELBRIDGE_API_KEY,
-  baseURL: 'https://api.modelbridge.ai/v1', // Optional: defaults to official API
+  baseURL: '', // Optional: put official url here
   timeout: 30000, // Optional: timeout in milliseconds
   maxRetries: 3, // Optional: number of retries for failed requests
   dangerouslyAllowBrowser: false, // Optional: allow usage in browser environment
@@ -202,12 +202,8 @@ Fetch API
 
 - **Chat** - Chat completions and related operations
 - **Models** - Model information and availability
-- **Usage** - Usage tracking and analytics
-- **Credits** - Credit balance and management
-- **Images** - Image generation (placeholder for future)
-- **Audio** - Audio operations (placeholder for future)
-- **Video** - Video operations (placeholder for future)
-- **Research** - Research operations (placeholder for future)
+- **Usage** - Usage tracking and analytics (for future)
+- **Credits** - Credit balance and management ( for future)
 
 ## Advanced Usage
 
@@ -285,9 +281,3 @@ Contributions are welcome! Please see [CONTRIBUTING.md](./CONTRIBUTING.md) for g
 
 MIT License - see [LICENSE](./LICENSE) for details.
 
-## Support
-
-- 📖 [Documentation](https://docs.modelbridge.ai)
-- 💬 [Discord Community](https://discord.gg/modelbridge)
-- 🐛 [Bug Reports](https://github.com/modelbridge/sdk-typescript/issues)
-- 💡 [Feature Requests](https://github.com/modelbridge/sdk-typescript/discussions)
