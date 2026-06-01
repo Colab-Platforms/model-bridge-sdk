@@ -1,0 +1,48 @@
+# Development
+node_modules/
+src/
+tsconfig.json
+
+# Testing
+**/*.test.ts
+**/*.spec.ts
+jest.config.js
+coverage/
+
+# Source maps
+**/*.map
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Git
+.git
+.gitignore
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+.travis.yml
+
+# Documentation
+docs/
+examples/
+
+# Package management
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Linting/Formatting
+.eslintrc*
+.prettierrc*
+.prettierignore
+
+# Build
+build/
+dist.tsbuildinfo
