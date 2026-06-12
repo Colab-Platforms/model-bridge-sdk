@@ -22,6 +22,13 @@ export class HttpClient {
   private config: SDKConfig;
 
   /**
+   * Internal request init shape that carries timeout cleanup for fetch calls.
+   */
+  private typeSafeCleanup(requestInit: RequestInit): void {
+    (requestInit as RequestInit & { __cleanupTimeout?: () => void }).__cleanupTimeout?.();
+  }
+
+  /**
    * Creates a new HttpClient instance
    * @param config - SDK configuration
    */
@@ -135,7 +142,12 @@ export class HttpClient {
       signal: options?.signal,
     });
 
-    const response = await fetch(url, requestInit);
+    let response: Response;
+    try {
+      response = await fetch(url, requestInit);
+    } finally {
+      this.typeSafeCleanup(requestInit);
+    }
 
     if (!response.ok) {
       try {
@@ -150,33 +162,68 @@ export class HttpClient {
       throw new Error('No response body for streaming request');
     }
 
-    // Create a text decoder stream
+    const sseTransformer = (() => {
+      let buffer = '';
+
+      const emitEvent = (eventBlock: string, controller: TransformStreamDefaultController<T>) => {
+        const normalizedEvent = eventBlock.replace(/\r\n/g, '\n').replace(/\r/g, '\n').trim();
+        if (!normalizedEvent) {
+          return false;
+        }
+
+        const dataLines = normalizedEvent
+          .split('\n')
+          .filter((line) => line.startsWith('data:'))
+          .map((line) => line.slice(5).trim());
+
+        if (dataLines.length === 0) {
+          return false;
+        }
+
+        const payload = dataLines.join('\n').trim();
+        if (!payload) {
+          return false;
+        }
+
+        if (payload === '[DONE]') {
+          controller.terminate();
+          return true;
+        }
+
+        try {
+          controller.enqueue(JSON.parse(payload) as T);
+        } catch (error) {
+          console.warn('Malformed SSE event (enqueuing raw payload):', payload, error);
+          controller.enqueue({ __raw: payload } as unknown as T);
+        }
+
+        return false;
+      };
+
+      return new TransformStream<string, T>({
+        transform(chunk: string, controller) {
+          buffer += chunk;
+
+          const normalizedBuffer = buffer.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+          const events = normalizedBuffer.split('\n\n');
+          buffer = events.pop() ?? '';
+
+          for (const event of events) {
+            if (emitEvent(event, controller)) {
+              buffer = '';
+              break;
+            }
+          }
+        },
+        flush(controller) {
+          emitEvent(buffer, controller);
+        },
+      });
+    })();
+
     const textStream = response.body
       .pipeThrough(new TextDecoderStream())
-      .pipeThrough(
-        new TransformStream({
-          transform(chunk: string, controller) {
-            // Split by newlines and process SSE format
-            const lines = chunk.split('\n');
-            for (const line of lines) {
-              if (line.startsWith('data: ')) {
-                const jsonStr = line.substring(6);
-                if (jsonStr === '[DONE]') {
-                  controller.terminate();
-                } else {
-                  try {
-                    const parsed = JSON.parse(jsonStr);
-                    controller.enqueue(parsed as T);
-                  } catch {
-                    // Skip malformed lines
-                    console.warn('Skipping malformed SSE line:', line);
-                  }
-                }
-              }
-            }
-          },
-        }),
-      ) as ReadableStream<T>;
+      .pipeThrough(sseTransformer) as ReadableStream<T>;
 
     return createStream(textStream);
   }
@@ -212,7 +259,13 @@ export class HttpClient {
         signal: options?.signal,
       });
 
-      const response = await fetch(url, requestInit);
+      let response: Response;
+      try {
+        response = await fetch(url, requestInit);
+      } finally {
+        this.typeSafeCleanup(requestInit);
+      }
+
       return ResponseHandler.handle<T>(response);
     }, retryConfig);
   }

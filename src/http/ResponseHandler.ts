@@ -72,7 +72,7 @@ export class ResponseHandler {
 
     const errorMessage = (errorData.message as string) || response.statusText;
     const errorCode = (errorData.code as string) || `HTTP_${response.status}`;
-    const details = errorData.details as Record<string, unknown>;
+    const details = this.extractErrorDetails(errorData);
 
     switch (response.status) {
       case 400:
@@ -165,6 +165,26 @@ export class ResponseHandler {
       record[key] = value;
     });
     return record;
+  }
+
+  /**
+   * Preserve server error fields even when the backend does not normalize them
+   */
+  private static extractErrorDetails(errorData: Record<string, unknown>): Record<string, unknown> | undefined {
+    const explicitDetails = errorData.details;
+    if (explicitDetails && typeof explicitDetails === 'object' && explicitDetails !== null) {
+      return explicitDetails as Record<string, unknown>;
+    }
+
+    const passthroughEntries = Object.entries(errorData).filter(([key]) => {
+      return !['message', 'code', 'details'].includes(key);
+    });
+
+    if (passthroughEntries.length === 0) {
+      return undefined;
+    }
+
+    return Object.fromEntries(passthroughEntries);
   }
 
   /**

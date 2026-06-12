@@ -27,7 +27,7 @@ export class RequestBuilder {
       contentType?: ContentType;
     },
   ): RequestInit {
-    const requestInit: RequestInit = {
+    const requestInit: RequestInit & { __cleanupTimeout?: () => void } = {
       method,
       headers: options?.headers || {},
     };
@@ -48,10 +48,12 @@ export class RequestBuilder {
       // Create abort controller with timeout
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), options.timeout);
+      const cleanup = () => clearTimeout(timeoutId);
       requestInit.signal = controller.signal;
+      requestInit.__cleanupTimeout = cleanup;
 
       // Clean up timeout on completion
-      (requestInit.signal as AbortSignal).addEventListener('abort', () => clearTimeout(timeoutId));
+      (requestInit.signal as AbortSignal).addEventListener('abort', cleanup, { once: true });
     }
 
     return requestInit;

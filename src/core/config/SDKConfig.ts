@@ -30,7 +30,7 @@ export class SDKConfig {
   public readonly maxRetries: number;
 
   /**
-   * Custom User-Agent header
+   * Custom User-Agent header 
    */
   public readonly userAgent: string;
 
@@ -61,12 +61,13 @@ export class SDKConfig {
     this.userAgent = config.userAgent || this.getDefaultUserAgent();
     this.dangerouslyAllowBrowser = config.dangerouslyAllowBrowser || false;
 
-    this.validateConfig();
+    this.validateConfig();                                                                    
   }
 
   private getDefaultBaseURL(): string {
-    // return 'https://api.modelbridge.ai/v1';
-    return "https://jsonplaceholder.typicode.com/";
+    // return "https://jsonplaceholder.typicode.com/";
+    // return "http://localhost:5001/api/v1";
+    return "https://model-bridge-cms-backend.onrender.com/api/v1"
   }
 
 

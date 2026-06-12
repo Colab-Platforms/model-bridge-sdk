@@ -11,7 +11,7 @@ export class Stream<Item> implements AsyncIterable<Item> {
   /**
    * The underlying ReadableStream
    */
-  private reader: ReadableStreamDefaultReader<Item>;
+  private readonly readableStream: ReadableStream<Item>;
 
   /**
    * Whether the stream is closed
@@ -19,20 +19,28 @@ export class Stream<Item> implements AsyncIterable<Item> {
   private closed: boolean = false;
 
   /**
+   * Active reader while the stream is being consumed
+   */
+  private activeReader: ReadableStreamDefaultReader<Item> | null = null;
+
+  /**
    * Creates a new Stream instance
    * @param readableStream - The underlying ReadableStream
    */
   constructor(readableStream: ReadableStream<Item>) {
-    this.reader = readableStream.getReader();
+    this.readableStream = readableStream;
   }
 
   /**
    * Async iterator protocol implementation
    */
   async *[Symbol.asyncIterator](): AsyncGenerator<Item, void, unknown> {
+    const reader = this.readableStream.getReader();
+    this.activeReader = reader;
+
     try {
       while (!this.closed) {
-        const { done, value } = await this.reader.read();
+        const { done, value } = await reader.read();
 
         if (done) {
           this.closed = true;
@@ -45,7 +53,8 @@ export class Stream<Item> implements AsyncIterable<Item> {
       }
     } finally {
       this.closed = true;
-      this.reader.releaseLock();
+      this.activeReader = null;
+      reader.releaseLock();
     }
   }
 
@@ -54,7 +63,17 @@ export class Stream<Item> implements AsyncIterable<Item> {
    */
   async close(): Promise<void> {
     this.closed = true;
-    await this.reader.cancel();
+    const reader = this.activeReader ?? this.readableStream.getReader();
+
+    try {
+      await reader.cancel();
+    } finally {
+      if (reader === this.activeReader) {
+        this.activeReader = null;
+      } else {
+        reader.releaseLock();
+      }
+    }
   }
 
   /**

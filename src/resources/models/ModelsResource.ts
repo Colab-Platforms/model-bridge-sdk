@@ -23,7 +23,7 @@ export class ModelsResource {
    * @returns Promise resolving to list of models
    */
   async list(limit?: number, offset?: number) {
-    return this.httpClient.get('/posts', { limit, offset });
+    return this.httpClient.get('/models', { limit, offset });
   }
 
   /**
@@ -32,7 +32,7 @@ export class ModelsResource {
    * @returns Promise resolving to model details
    */
   async retrieve(modelId: string): Promise<Model> {
-    return this.httpClient.get(`/posts/${modelId}`);
+    return this.httpClient.get(`/models/${modelId}`);
   }
 
   /**
@@ -41,7 +41,7 @@ export class ModelsResource {
    * @returns Promise resolving to filtered list of models
    */
   async listByType(type: string) {
-    return this.httpClient.get('/posts', { type });
+    return this.httpClient.get('/models', { type });
   }
 
   /**
@@ -50,6 +50,6 @@ export class ModelsResource {
    * @returns Promise resolving to pricing details
    */
   async getPricing(modelId: string) {
-    return this.httpClient.get(`/posts/${modelId}/pricing`);
+    return this.httpClient.get(`/models/${modelId}/pricing`);
   }
 }
